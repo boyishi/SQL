@@ -1,0 +1,115 @@
+-- Find all employees
+SELECT * FROM employee;
+
+-- Find all clients
+SELECT * FROM client;
+
+-- Find all employees ordered by salary
+SELECT * FROM employee
+ORDER BY salary DESC;
+
+-- Find employees ordered by sex then name
+SELECT * FROM employee
+ORDER BY sex, first_name;
+
+-- Find the first 5 employees
+SELECT * FROM employee
+LIMIT 5;
+
+-- Find the forename and surname of all employees
+SELECT first_name AS forename, last_name AS surname
+FROM employee;
+
+-- Find out all the different genders
+SELECT DISTINCT sex FROM employee;
+
+----------------------------------------------------------- USING WILDCARDS -------------------------------------------------------- 
+-- % (any # characters), _ (one character)
+-- Find any client's who are an LLC 
+SELECT *
+FROM client
+WHERE client_name LIKE '%LLC';
+
+-- Find any branch suppliers who are in the label business
+SELECT * FROM branch_supplier
+WHERE suppler_name LIKE '%LABEL%';
+
+-- Find all employees born in February
+SELECT * FROM employee
+WHERE birth_date LIKE '____-02-__';
+
+-- Find any clients who are schools
+SELECT * FROM client
+WHERE client_name LIKE '%school';
+
+--------------------------------------------------------UNIONS (VERTICAL) -----------------------------------------------------------------
+-- Rules
+ -- 1. Must have the same number of columns
+
+SELECT client_name, client.branch_id 
+FROM client
+UNION
+SELECT suppler_name, branch_supplier.branch_id
+from branch_supplier;
+
+-- Find a list of all money spent or earned by the company
+SELECT salary FROM employee UNION SELECT total_sales FROM works_with;
+
+-------------------------------------------------------JOINS (HORIZONTAL)----------------------------------------------------------
+INSERT INTO branch VALUES(4, "Buffalo", NULL, NULL);
+
+-- Find all branches and the name of their managers
+SELECT employee.emp_id, employee.first_name, branch.branch_name 
+FROM employee
+JOIN branch 
+ON employee.emp_id = branch.mgr_id;
+
+-- Find the employees and their total sales
+SELECT employee.first_name, employee.last_name, works_with.total_sales
+FROM employee
+JOIN works_with
+ON employee.emp_id = works_with.emp_id;
+-------------------------------------------------------- NESTED QUERIES -------------------------------------------------------------------
+-- Find the names of all employees with more than 30k sales
+SELECT employee.first_name AS "First Name", employee.last_name AS "Last Name"
+FROM employee
+WHERE employee.emp_id IN (
+    SELECT DISTINCT works_with.emp_id 
+    FROM works_with
+    WHERE total_sales > 30000
+);
+
+-- Find all clients who are handled by the branch 
+-- that Michael Scott manages
+-- Assume that you know Micheal's ID
+
+SELECT client_name AS Clients
+FROM client
+WHERE branch_id IN (
+    SELECT branch_id
+    FROM employee
+    WHERE emp_id = 102
+);
+
+---------------------------------------------------------- TRIGGERS  ---------------------------------------------------------------
+CREATE TABLE loggedCmds (
+    message VARCHAR(100)
+); 
+
+DELIMITER $$
+CREATE 
+    TRIGGER my_trigger BEFORE INSERT
+    ON employee
+    FOR EACH ROW BEGIN
+        IF NEW.sex = 'M' THEN # NEW refers to *this
+            INSERT INTO loggedCmds VALUES('Added Male Employee');
+        ELSEIF NEW.sex = 'F' THEN
+            INSERT INTO loggedCmds VALUES("Added Female Employee");
+        ELSE 
+            INSERT INTO loggedCmds VALUES('Added some other employee');
+        END IF;
+    END$$
+DELIMITER ; 
+
+INSERT INTO employee VALUES(111, "Pam", "Beesly", "1998-02-19", 'F', 69000, 106, 3);
+SELECT * FROM loggedCmds;
